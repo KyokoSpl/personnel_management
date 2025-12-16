@@ -1,10 +1,10 @@
 #ifndef DEPARTMENT_H
 #define DEPARTMENT_H
 
-#include <QString>
 #include <QDateTime>
 #include <QJsonObject>
 #include <QObject>
+#include <QString>
 
 class Department {
     Q_GADGET

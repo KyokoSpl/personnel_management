@@ -11,7 +11,7 @@ Employee Employee::fromJson(const QJsonObject& json) {
     emp.departmentId = json["department_id"].toString();
     emp.managerId = json["manager_id"].toString();
     emp.salaryGradeId = json["salary_grade_id"].toString();
-    
+
     if (json.contains("hire_date") && !json["hire_date"].isNull()) {
         emp.hireDate = QDateTime::fromString(json["hire_date"].toString(), Qt::ISODate);
     }
@@ -24,7 +24,7 @@ Employee Employee::fromJson(const QJsonObject& json) {
     if (json.contains("deleted_at") && !json["deleted_at"].isNull()) {
         emp.deletedAt = QDateTime::fromString(json["deleted_at"].toString(), Qt::ISODate);
     }
-    
+
     return emp;
 }
 
@@ -33,11 +33,16 @@ QJsonObject Employee::toJson() const {
     json["first_name"] = firstName;
     json["last_name"] = lastName;
     json["email"] = email;
-    if (!role.isEmpty()) json["role"] = role;
+    if (!role.isEmpty())
+        json["role"] = role;
     json["active"] = active;
-    if (!departmentId.isEmpty()) json["department_id"] = departmentId;
-    if (!managerId.isEmpty()) json["manager_id"] = managerId;
-    if (!salaryGradeId.isEmpty()) json["salary_grade_id"] = salaryGradeId;
-    if (hireDate.isValid()) json["hire_date"] = hireDate.toString(Qt::ISODate);
+    if (!departmentId.isEmpty())
+        json["department_id"] = departmentId;
+    if (!managerId.isEmpty())
+        json["manager_id"] = managerId;
+    if (!salaryGradeId.isEmpty())
+        json["salary_grade_id"] = salaryGradeId;
+    if (hireDate.isValid())
+        json["hire_date"] = hireDate.toString(Qt::ISODate);
     return json;
 }

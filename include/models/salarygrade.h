@@ -1,9 +1,9 @@
 #ifndef SALARYGRADE_H
 #define SALARYGRADE_H
 
-#include <QString>
 #include <QDateTime>
 #include <QJsonObject>
+#include <QString>
 
 class SalaryGrade {
     Q_GADGET

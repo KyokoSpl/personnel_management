@@ -1,0 +1,270 @@
+name: CI - Build, Format, and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+  QT_VERSION: 6.5.0
+
+jobs:
+  format-check:
+    name: Check Code Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format-14
+
+    - name: Check C++ formatting
+      run: |
+        find src include -name "*.cpp" -o -name "*.h" | xargs clang-format-14 --dry-run --Werror
+
+    - name: Report formatting issues
+      if: failure()
+      run: |
+        echo "::error::Code formatting issues detected. Run 'clang-format -i' on the affected files."
+        find src include -name "*.cpp" -o -name "*.h" | xargs clang-format-14 --dry-run --Werror 2>&1 || true
+
+  build-and-test-linux:
+    name: Build and Test (Linux)
+    runs-on: ubuntu-latest
+    needs: format-check
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        modules: 'qtquickcontrols2'
+        cache: true
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build libgl1-mesa-dev
+
+    - name: Create .env file for tests
+      run: |
+        cp .env.test .env
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DBUILD_TESTING=ON
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} -j$(nproc)
+
+    - name: Run tests
+      working-directory: build
+      run: |
+        ctest --output-on-failure --verbose
+
+    - name: Generate test report
+      if: always()
+      working-directory: build
+      run: |
+        ctest --output-junit test_results.xml || true
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-linux
+        path: build/test_results.xml
+
+    - name: Upload build artifacts
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: personnel-management-linux
+        path: build/personnel_management
+
+  build-windows:
+    name: Build (Windows)
+    runs-on: windows-latest
+    needs: format-check
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        modules: 'qtquickcontrols2'
+        arch: 'win64_msvc2019_64'
+        cache: true
+
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Create .env file
+      run: |
+        Copy-Item .env.test .env
+
+    - name: Configure CMake
+      run: |
+        cmake -B build `
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+          -DBUILD_TESTING=ON
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }}
+
+    - name: Run tests
+      working-directory: build
+      run: |
+        ctest --output-on-failure --verbose -C ${{ env.BUILD_TYPE }}
+
+    - name: Upload build artifacts
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: personnel-management-windows
+        path: build/${{ env.BUILD_TYPE }}/personnel_management.exe
+
+  build-macos:
+    name: Build (macOS)
+    runs-on: macos-latest
+    needs: format-check
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        modules: 'qtquickcontrols2'
+        cache: true
+
+    - name: Install dependencies
+      run: |
+        brew install cmake ninja
+
+    - name: Create .env file
+      run: |
+        cp .env.test .env
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DBUILD_TESTING=ON
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }}
+
+    - name: Run tests
+      working-directory: build
+      run: |
+        ctest --output-on-failure --verbose
+
+    - name: Upload build artifacts
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: personnel-management-macos
+        path: build/personnel_management
+
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: format-check
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        modules: 'qtquickcontrols2'
+        cache: true
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build libgl1-mesa-dev gcovr lcov
+
+    - name: Create .env file
+      run: |
+        cp .env.test .env
+
+    - name: Configure CMake with coverage
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DBUILD_TESTING=ON \
+          -DCMAKE_CXX_FLAGS="--coverage" \
+          -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Run tests
+      working-directory: build
+      run: ctest --output-on-failure
+
+    - name: Generate coverage report
+      working-directory: build
+      run: |
+        gcovr -r .. --html --html-details -o coverage.html
+        gcovr -r .. --xml -o coverage.xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: build/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: build/coverage.html
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-test-linux, build-windows, build-macos]
+    if: always()
+
+    steps:
+    - name: Check build status
+      run: |
+        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Linux    | ${{ needs.build-and-test-linux.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Windows  | ${{ needs.build-windows.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| macOS    | ${{ needs.build-macos.result }} |" >> $GITHUB_STEP_SUMMARY
+
+    - name: Fail if any build failed
+      if: |
+        needs.build-and-test-linux.result == 'failure' ||
+        needs.build-windows.result == 'failure' ||
+        needs.build-macos.result == 'failure'
+      run: exit 1

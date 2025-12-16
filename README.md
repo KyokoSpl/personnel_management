@@ -4,6 +4,9 @@
 [![Qt Version](https://img.shields.io/badge/Qt-6.2+-green.svg)](https://www.qt.io/)
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey.svg)](https://github.com/kyokospl/personnel-management)
+[![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com/kyokospl/personnel-management/actions)
+[![Tests](https://img.shields.io/badge/tests-34%20passing-success.svg)](tests/)
+[![Code Style](https://img.shields.io/badge/code%20style-clang--format-blue.svg)](.clang-format)
 
 A modern, cross-platform Personnel Management System frontend built with **C++17** and **Qt6/QML**, featuring a beautiful **Material Design 3** user interface.
 
@@ -37,6 +40,8 @@ A modern, cross-platform Personnel Management System frontend built with **C++17
 - [Installation](#-installation)
 - [Configuration](#-configuration)
 - [Building from Source](#-building-from-source)
+- [Testing](#-testing)
+- [Code Formatting](#-code-formatting)
 - [Packaging](#-packaging)
 - [Project Structure](#-project-structure)
 - [Architecture](#-architecture)
@@ -228,7 +233,130 @@ cmake --build .
 | `CMAKE_BUILD_TYPE` | `Debug` | Build type (Debug/Release/RelWithDebInfo) |
 | `CMAKE_PREFIX_PATH` | - | Qt installation path |
 | `CMAKE_INSTALL_PREFIX` | `/usr` | Installation prefix |
-| `BUILD_TESTING` | `OFF` | Enable building tests |
+| `BUILD_TESTING` | `ON` | Enable building tests |
+
+## 🧪 Testing
+
+The project includes a comprehensive test suite built with **Google Test** framework, covering model classes, configuration management, and integration scenarios.
+
+### Running Tests
+
+```bash
+# Build with tests enabled
+mkdir build && cd build
+cmake -DBUILD_TESTING=ON ..
+cmake --build .
+
+# Run all tests
+ctest --output-on-failure
+
+# Or run the test executable directly
+./tests/personnel_management_tests
+
+# Run specific test suites
+./tests/personnel_management_tests --gtest_filter="EmployeeTest.*"
+./tests/personnel_management_tests --gtest_filter="*JsonConversion*"
+```
+
+### Test Coverage
+
+The test suite includes **34 tests** covering:
+
+- **Employee Model Tests** (6 tests)
+  - JSON serialization/deserialization
+  - Full name formatting
+  - Data validation and edge cases
+
+- **Department Model Tests** (7 tests)
+  - Constructor variations
+  - JSON operations
+  - Optional field handling
+
+- **Salary Grade Model Tests** (9 tests)
+  - Default values
+  - Precision handling for salaries
+  - Edge cases (zero, large values)
+
+- **Config Tests** (8 tests)
+  - Singleton pattern
+  - Environment variable loading
+  - URL construction and validation
+
+- **Edge Case Tests** (4 tests)
+  - Empty data handling
+  - Special characters
+  - Very long strings
+  - Type mismatches
+
+### Continuous Integration
+
+All tests are automatically run in CI on:
+- ✅ Linux (Ubuntu latest)
+- ✅ Windows (MSVC)
+- ✅ macOS (latest)
+
+See [.github/workflows/ci.yml](.github/workflows/ci.yml) for the complete CI configuration.
+
+### Code Coverage
+
+Generate coverage reports locally:
+
+```bash
+# Configure with coverage flags
+cmake -B build \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS="--coverage" \
+  -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
+  -DBUILD_TESTING=ON
+
+# Build and test
+cmake --build build
+cd build && ctest
+
+# Generate report (requires gcovr)
+gcovr -r .. --html --html-details -o coverage.html
+```
+
+For more details, see [tests/README.md](tests/README.md).
+
+## 🎨 Code Formatting
+
+The project uses **clang-format** for consistent C++ code style.
+
+### Format All Code
+
+```bash
+# Format all C++ files
+./scripts/format.sh
+
+# Check formatting without modifying files
+./scripts/format.sh --check
+```
+
+### IDE Integration
+
+The `.clang-format` configuration file is automatically detected by most IDEs:
+- **Visual Studio Code**: Install the C/C++ extension
+- **CLion**: Built-in support
+- **Qt Creator**: Enable Beautifier plugin
+- **Vim/Neovim**: Use vim-clang-format plugin
+
+### Pre-commit Hook
+
+To automatically format code before commits:
+
+```bash
+# Create pre-commit hook
+cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+./scripts/format.sh --check
+if [ $? -ne 0 ]; then
+    echo "Code formatting check failed. Run './scripts/format.sh' to fix."
+    exit 1
+fi
+EOF
+chmod +x .git/hooks/pre-commit
+```
 
 ## 📦 Packaging
 

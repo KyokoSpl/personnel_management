@@ -1,9 +1,9 @@
 #ifndef EMPLOYEE_H
 #define EMPLOYEE_H
 
-#include <QString>
 #include <QDateTime>
 #include <QJsonObject>
+#include <QString>
 
 class Employee {
     Q_GADGET
@@ -37,7 +37,7 @@ public:
     QDateTime deletedAt;
 
     Employee() = default;
-    
+
     QString fullName() const { return firstName + " " + lastName; }
 
     static Employee fromJson(const QJsonObject& json);

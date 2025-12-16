@@ -1,8 +1,8 @@
 #ifndef MATERIAL3COLORS_H
 #define MATERIAL3COLORS_H
 
-#include <QObject>
 #include <QColor>
+#include <QObject>
 
 class Material3Colors : public QObject {
     Q_OBJECT

@@ -74,3 +74,10 @@ endforeach()
 # Install executable and QML files
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
 install(DIRECTORY resources/qml DESTINATION share/${PROJECT_NAME})
+
+# Enable testing
+option(BUILD_TESTING "Build tests" ON)
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

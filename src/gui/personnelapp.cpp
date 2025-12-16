@@ -1,20 +1,19 @@
 #include "gui/personnelapp.h"
+
 #include <QJsonObject>
 
 PersonnelApp::PersonnelApp(QObject* parent)
-    : QObject(parent),
-      m_apiClient(new ApiClient(this)),
-      m_colors(new Material3Colors(true, this)),
-      m_currentTab(0),
-      m_darkMode(true) {
-    
+    : QObject(parent), m_apiClient(new ApiClient(this)), m_colors(new Material3Colors(true, this)),
+      m_currentTab(0), m_darkMode(true) {
     // Connect signals
-    connect(m_apiClient, &ApiClient::departmentsReceived, this, &PersonnelApp::onDepartmentsReceived);
+    connect(m_apiClient, &ApiClient::departmentsReceived, this,
+            &PersonnelApp::onDepartmentsReceived);
     connect(m_apiClient, &ApiClient::employeesReceived, this, &PersonnelApp::onEmployeesReceived);
-    connect(m_apiClient, &ApiClient::salaryGradesReceived, this, &PersonnelApp::onSalaryGradesReceived);
+    connect(m_apiClient, &ApiClient::salaryGradesReceived, this,
+            &PersonnelApp::onSalaryGradesReceived);
     connect(m_apiClient, &ApiClient::operationCompleted, this, &PersonnelApp::onOperationCompleted);
     connect(m_apiClient, &ApiClient::errorOccurred, this, &PersonnelApp::onErrorOccurred);
-    
+
     // Load initial data
     refreshDepartments();
     refreshEmployees();
@@ -49,18 +48,18 @@ void PersonnelApp::updateDepartment(const QString& id, const QString& name, cons
     m_apiClient->updateDepartment(id, name, headId);
 }
 
-void PersonnelApp::updateDepartmentWithHead(const QString& deptId, const QString& name, 
-                                             const QString& newHeadId, const QString& oldHeadId) {
+void PersonnelApp::updateDepartmentWithHead(const QString& deptId, const QString& name,
+                                            const QString& newHeadId, const QString& oldHeadId) {
     // Update the department first
     m_apiClient->updateDepartment(deptId, name, newHeadId);
-    
+
     // If there was an old head and it's different from the new one, update their role
     if (!oldHeadId.isEmpty() && oldHeadId != newHeadId) {
         QJsonObject oldHeadUpdate;
         oldHeadUpdate["role"] = "Employee";
         m_apiClient->updateEmployee(oldHeadId, oldHeadUpdate);
     }
-    
+
     // If there's a new head, update their role to DepartmentHead (no space - API format)
     if (!newHeadId.isEmpty()) {
         QJsonObject newHeadUpdate;
@@ -78,9 +77,8 @@ void PersonnelApp::refreshEmployees() {
 }
 
 void PersonnelApp::createEmployee(const QString& firstName, const QString& lastName,
-                                 const QString& email, const QString& role,
-                                 const QString& deptId, const QString& managerId,
-                                 const QString& gradeId) {
+                                  const QString& email, const QString& role, const QString& deptId,
+                                  const QString& managerId, const QString& gradeId) {
     m_apiClient->createEmployee(firstName, lastName, email, role, deptId, managerId, gradeId);
 }
 
@@ -100,11 +98,13 @@ void PersonnelApp::refreshSalaryGrades() {
     m_apiClient->getSalaryGrades();
 }
 
-void PersonnelApp::createSalaryGrade(const QString& code, double baseSalary, const QString& description) {
+void PersonnelApp::createSalaryGrade(const QString& code, double baseSalary,
+                                     const QString& description) {
     m_apiClient->createSalaryGrade(code, baseSalary, description);
 }
 
-void PersonnelApp::updateSalaryGrade(const QString& id, const QString& code, double baseSalary, const QString& description) {
+void PersonnelApp::updateSalaryGrade(const QString& id, const QString& code, double baseSalary,
+                                     const QString& description) {
     m_apiClient->updateSalaryGrade(id, code, baseSalary, description);
 }
 
