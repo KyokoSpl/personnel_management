@@ -1,0 +1,45 @@
+# Build directories
+build/
+build-*/
+*.user
+*.autosave
+
+# Packages
+packages/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Qt
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*.qm
+.qmake.stash
+
+# Compiled Object files
+*.o
+*.obj
+*.lo
+
+# Executables
+personnel_management
+personnel_management.exe
+*.app
+
+# IDE
+.vscode/
+.idea/
+*.pro.user*
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

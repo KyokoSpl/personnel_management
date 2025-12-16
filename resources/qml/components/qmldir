@@ -1,0 +1,8 @@
+module components
+
+MaterialButton 1.0 MaterialButton.qml
+MaterialCard 1.0 MaterialCard.qml
+MaterialComboBox 1.0 MaterialComboBox.qml
+MaterialIcon 1.0 MaterialIcon.qml
+MaterialTextField 1.0 MaterialTextField.qml
+SearchableEmployeeComboBox 1.0 SearchableEmployeeComboBox.qml

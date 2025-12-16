@@ -1,0 +1,6 @@
+module dialogs
+
+ConfirmDialog 1.0 ConfirmDialog.qml
+DepartmentEditDialog 1.0 DepartmentEditDialog.qml
+EmployeeEditDialog 1.0 EmployeeEditDialog.qml
+SalaryGradeEditDialog 1.0 SalaryGradeEditDialog.qml

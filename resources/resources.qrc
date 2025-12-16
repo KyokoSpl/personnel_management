@@ -1,0 +1,20 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file>qml/main.qml</file>
+        <file>qml/views/DepartmentsView.qml</file>
+        <file>qml/views/EmployeesView.qml</file>
+        <file>qml/views/SalaryGradesView.qml</file>
+        <file>qml/components/MaterialButton.qml</file>
+        <file>qml/components/MaterialCard.qml</file>
+        <file>qml/components/MaterialComboBox.qml</file>
+        <file>qml/components/MaterialIcon.qml</file>
+        <file>qml/components/MaterialTextField.qml</file>
+        <file>qml/components/SearchableEmployeeComboBox.qml</file>
+        <file>qml/dialogs/ConfirmDialog.qml</file>
+        <file>qml/dialogs/DepartmentEditDialog.qml</file>
+        <file>qml/dialogs/EmployeeEditDialog.qml</file>
+        <file>qml/dialogs/SalaryGradeEditDialog.qml</file>
+        <file alias="icons/app_icon.png">icons/icon.png</file>
+    </qresource>
+</RCC>
