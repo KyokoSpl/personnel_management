@@ -31,6 +31,7 @@ BUILD_DIR_WIN="build-windows"
 PACKAGE_DIR="packages"
 DIST_DIR="dist"
 RELEASE_NOTES_FILE="RELEASE_NOTES.md"
+GITHUB_ARTIFACTS_DIR="github-artifacts"
 
 # MinGW toolchain
 MINGW_PREFIX="x86_64-w64-mingw32"
@@ -92,6 +93,20 @@ check_dependencies() {
                 print_info ""
                 print_info "Install on Fedora:"
                 print_info "  sudo dnf install mingw64-gcc-c++ mingw64-qt6-qtbase mingw64-qt6-qtdeclarative"
+                return 1
+            fi
+            ;;
+        github-artifacts)
+            if ! command -v gh &> /dev/null; then
+                print_error "GitHub CLI (gh) not found."
+                print_info "Install with:"
+                print_info "  Fedora: sudo dnf install gh"
+                print_info "  Debian/Ubuntu: sudo apt install gh"
+                print_info "  Arch: sudo pacman -S github-cli"
+                return 1
+            fi
+            if ! command -v unzip &> /dev/null; then
+                print_error "unzip not found. Install it first."
                 return 1
             fi
             ;;
@@ -159,6 +174,62 @@ build_application() {
 
     cd ..
     print_success "Linux application built successfully"
+}
+
+# Function to download Windows build from GitHub Actions
+download_windows_artifact() {
+    print_header "Downloading Windows Build from GitHub Actions"
+
+    check_dependencies github-artifacts || return 1
+
+    mkdir -p "$GITHUB_ARTIFACTS_DIR"
+
+    print_info "Fetching latest successful workflow run..."
+
+    # Get the latest successful CI workflow run
+    local RUN_ID=$(gh run list \
+        --repo "$GITHUB_OWNER/$GITHUB_REPO" \
+        --workflow "ci.yml" \
+        --status success \
+        --limit 1 \
+        --json databaseId \
+        --jq '.[0].databaseId' 2>/dev/null)
+
+    if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+        print_error "No successful CI workflow runs found."
+        print_info "Make sure the CI workflow has run successfully at least once."
+        print_info "Push to main/develop branch to trigger a CI build."
+        return 1
+    fi
+
+    print_info "Found workflow run: $RUN_ID"
+
+    # Download the Windows artifact
+    print_info "Downloading Windows artifact..."
+    gh run download "$RUN_ID" \
+        --repo "$GITHUB_OWNER/$GITHUB_REPO" \
+        --name "personnel-management-windows" \
+        --dir "$GITHUB_ARTIFACTS_DIR/windows" 2>/dev/null || {
+        print_error "Failed to download Windows artifact."
+        print_info "The artifact may have expired (GitHub keeps artifacts for 90 days)."
+        return 1
+    }
+
+    # Verify the download
+    if [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe" ]; then
+        print_success "Windows executable downloaded successfully!"
+        print_info "Location: $GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe"
+        return 0
+    elif ls "$GITHUB_ARTIFACTS_DIR/windows/"*.exe &>/dev/null 2>&1; then
+        print_success "Windows executable downloaded successfully!"
+        print_info "Location: $GITHUB_ARTIFACTS_DIR/windows/"
+        return 0
+    else
+        print_error "Windows executable not found in downloaded artifact."
+        print_info "Contents of download:"
+        ls -la "$GITHUB_ARTIFACTS_DIR/windows/" 2>/dev/null || echo "  (empty)"
+        return 1
+    fi
 }
 
 # Function to build Windows executable using MinGW cross-compilation
@@ -441,10 +512,37 @@ package_windows() {
     mkdir -p "$WIN_DIR/platforms"
     mkdir -p "$WIN_DIR/imageformats"
 
-    # Check if we have a Windows build
-    if [ -f "$BUILD_DIR_WIN/personnel_management.exe" ]; then
-        print_info "Copying Windows executable..."
+    local WINDOWS_EXE_FOUND=false
+    local USE_GITHUB_ARTIFACT=false
+
+    # Check for GitHub Actions artifact first (preferred - has all Qt DLLs)
+    if [ -d "$GITHUB_ARTIFACTS_DIR/windows" ]; then
+        if [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe" ]; then
+            print_info "Using Windows build from GitHub Actions artifact..."
+            USE_GITHUB_ARTIFACT=true
+            WINDOWS_EXE_FOUND=true
+
+            # Copy everything from the artifact (includes Qt DLLs from windeployqt)
+            cp -r "$GITHUB_ARTIFACTS_DIR/windows/"* "$WIN_DIR/bin/" 2>/dev/null || true
+
+            # Move exe to bin if it's in root
+            if [ -f "$WIN_DIR/bin/personnel_management.exe" ]; then
+                print_success "Windows executable and dependencies copied from GitHub artifact"
+            fi
+        elif ls "$GITHUB_ARTIFACTS_DIR/windows/"*.exe &>/dev/null 2>&1; then
+            print_info "Using Windows build from GitHub Actions artifact..."
+            USE_GITHUB_ARTIFACT=true
+            WINDOWS_EXE_FOUND=true
+            cp -r "$GITHUB_ARTIFACTS_DIR/windows/"* "$WIN_DIR/bin/" 2>/dev/null || true
+            print_success "Windows executable and dependencies copied from GitHub artifact"
+        fi
+    fi
+
+    # Fall back to local MinGW cross-compiled build
+    if [ "$WINDOWS_EXE_FOUND" = false ] && [ -f "$BUILD_DIR_WIN/personnel_management.exe" ]; then
+        print_info "Using locally cross-compiled Windows executable..."
         cp "$BUILD_DIR_WIN/personnel_management.exe" "$WIN_DIR/bin/"
+        WINDOWS_EXE_FOUND=true
 
         # Copy Qt DLLs if available
         local QT6_BIN="/usr/${MINGW_PREFIX}/bin"
@@ -468,10 +566,21 @@ package_windows() {
             cp "$QT6_PLUGINS/platforms/qwindows.dll" "$WIN_DIR/platforms/" 2>/dev/null || true
         fi
 
-        print_success "Windows executable included in package"
-    else
-        print_warning "No Windows executable found at $BUILD_DIR_WIN/personnel_management.exe"
-        print_info "Run './package.sh --build-windows' first to cross-compile"
+        print_success "Local Windows build packaged (may need additional DLLs)"
+    fi
+
+    # If still no Windows exe found, show instructions
+    if [ "$WINDOWS_EXE_FOUND" = false ]; then
+        print_warning "No Windows executable found."
+        print_info ""
+        print_info "Options to get Windows build:"
+        print_info "  1. Download from GitHub Actions (recommended):"
+        print_info "     ./package.sh --download-windows"
+        print_info ""
+        print_info "  2. Cross-compile locally with MinGW:"
+        print_info "     ./package.sh --build-windows"
+        print_info ""
+        return 1
     fi
 
     # Copy QML files
@@ -909,7 +1018,7 @@ delete_release() {
 # Function to clean previous builds
 clean() {
     print_info "Cleaning previous builds..."
-    rm -rf "$BUILD_DIR" "$BUILD_DIR_WIN" "$PACKAGE_DIR" "$DIST_DIR" "$RELEASE_NOTES_FILE"
+    rm -rf "$BUILD_DIR" "$BUILD_DIR_WIN" "$PACKAGE_DIR" "$DIST_DIR" "$RELEASE_NOTES_FILE" "$GITHUB_ARTIFACTS_DIR"
     print_success "Clean complete"
 }
 
@@ -925,7 +1034,8 @@ ${YELLOW}BUILD OPTIONS:${NC}
     -c, --clean             Clean previous builds before packaging
     -a, --all               Build packages for all supported platforms
     -b, --build-only        Only build the Linux application, don't package
-    --build-windows         Cross-compile Windows executable using MinGW
+    --build-windows         Cross-compile Windows executable using MinGW (local)
+    --download-windows      Download Windows build from GitHub Actions (recommended)
     --no-build              Skip building (use existing build)
 
 ${YELLOW}RELEASE OPTIONS:${NC}
@@ -947,35 +1057,42 @@ ${YELLOW}EXAMPLES:${NC}
     $0 fedora debian                    # Package for Fedora and Debian only
     $0 --clean --all                    # Clean, build, and package everything
     $0 --build-only                     # Only build the Linux application
-    $0 --build-windows                  # Cross-compile for Windows
-    $0 --build-windows windows          # Build and package Windows version
+    $0 --download-windows               # Download Windows build from GitHub Actions
+    $0 --download-windows windows       # Download and package Windows version
+    $0 --build-windows                  # Cross-compile for Windows locally
     $0 --release v0.2.0                 # Create GitHub release with auto-generated notes
     $0 --clean --all --release v0.2.0   # Full workflow: clean, build, package, release
 
-${YELLOW}WINDOWS CROSS-COMPILATION (Arch Linux):${NC}
-    # Install MinGW toolchain
-    sudo pacman -S mingw-w64-gcc
+${YELLOW}WINDOWS BUILD OPTIONS:${NC}
 
-    # Install Qt6 for MinGW from AUR
+    ${GREEN}Option 1: Download from GitHub Actions (Recommended)${NC}
+    # This downloads the pre-built Windows exe with all Qt DLLs included
+    $0 --download-windows
+    $0 windows
+
+    ${GREEN}Option 2: Local cross-compilation with MinGW${NC}
+    # Install MinGW toolchain (Arch Linux)
+    sudo pacman -S mingw-w64-gcc
     paru -S mingw-w64-qt6-base mingw-w64-qt6-declarative mingw-w64-qt6-quickcontrols2
 
     # Build Windows executable
     $0 --build-windows
-
-    # Package for Windows
     $0 windows
 
 ${YELLOW}GITHUB RELEASE WORKFLOW:${NC}
-    # Full release with all packages:
-    $0 --clean --all --build-windows --release v0.2.0
+    # Full release with all packages (using GitHub Actions Windows build):
+    $0 --clean --download-windows --all --release v0.2.0
 
     # This will:
     # 1. Clean previous builds
-    # 2. Build Linux application
-    # 3. Cross-compile Windows executable
+    # 2. Download Windows exe from GitHub Actions (with Qt DLLs)
+    # 3. Build Linux application locally
     # 4. Create packages for all platforms
     # 5. Generate release notes from git commits
     # 6. Create GitHub release and upload all assets
+
+    # Alternative: Full release with local Windows cross-compilation:
+    $0 --clean --build-windows --all --release v0.2.0
 
 ${YELLOW}NOTES:${NC}
     - Packages are created in the '$PACKAGE_DIR' directory
@@ -992,6 +1109,7 @@ main() {
     local do_clean=false
     local build_only=false
     local build_windows=false
+    local download_windows=false
     local no_build=false
     local all_platforms=false
     local release_tag=""
@@ -1021,6 +1139,10 @@ main() {
                 ;;
             --build-windows)
                 build_windows=true
+                shift
+                ;;
+            --download-windows)
+                download_windows=true
                 shift
                 ;;
             --no-build)
@@ -1112,12 +1234,17 @@ main() {
         build_application
     fi
 
-    # Build Windows executable
+    # Download Windows build from GitHub Actions
+    if [ "$download_windows" = true ]; then
+        download_windows_artifact
+    fi
+
+    # Build Windows executable locally (cross-compile)
     if [ "$build_windows" = true ]; then
         build_windows
     fi
 
-    if [ "$build_only" = true ] && [ "$build_windows" = false ]; then
+    if [ "$build_only" = true ] && [ "$build_windows" = false ] && [ "$download_windows" = false ]; then
         print_success "Build complete. Binary: $BUILD_DIR/personnel_management"
         exit 0
     fi
