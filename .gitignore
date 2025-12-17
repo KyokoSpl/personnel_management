@@ -8,6 +8,9 @@ build-windows-docker/
 # Packages
 packages/
 
+# GitHub artifacts (local downloads)
+github-artifacts/
+
 # CMake
 CMakeCache.txt
 CMakeFiles/

@@ -21,9 +21,9 @@ PROJECT_MAINTAINER="Kyoko Kiese <kyokokiese@proton.me>"
 PROJECT_URL="https://github.com/kyokospl/personnel-management"
 LICENSE="MIT"
 
-# GitHub information
-GITHUB_OWNER="kyokospl"
-GITHUB_REPO="personnel-management"
+# GitHub information (auto-detected from git remote if not set)
+GITHUB_OWNER=""
+GITHUB_REPO=""
 
 # Build directory
 BUILD_DIR="build"
@@ -157,6 +157,34 @@ find_mingw_qt6() {
     return 1
 }
 
+# Function to detect GitHub repo from git remote
+detect_github_repo() {
+    if [ -n "$GITHUB_OWNER" ] && [ -n "$GITHUB_REPO" ]; then
+        return 0
+    fi
+
+    # Try to get from git remote
+    local REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
+
+    if [ -z "$REMOTE_URL" ]; then
+        print_error "Could not detect GitHub repository. No git remote 'origin' found."
+        return 1
+    fi
+
+    # Parse GitHub URL (supports both HTTPS and SSH formats)
+    # https://github.com/owner/repo.git
+    # git@github.com:owner/repo.git
+    if [[ "$REMOTE_URL" =~ github\.com[:/]([^/]+)/([^/.]+)(\.git)?$ ]]; then
+        GITHUB_OWNER="${BASH_REMATCH[1]}"
+        GITHUB_REPO="${BASH_REMATCH[2]}"
+        print_info "Detected GitHub repo: $GITHUB_OWNER/$GITHUB_REPO"
+        return 0
+    else
+        print_error "Could not parse GitHub repository from remote URL: $REMOTE_URL"
+        return 1
+    fi
+}
+
 # Function to build the application (Linux)
 build_application() {
     print_header "Building Application (Linux)"
@@ -182,38 +210,87 @@ download_windows_artifact() {
 
     check_dependencies github-artifacts || return 1
 
+    # Auto-detect GitHub repo
+    detect_github_repo || return 1
+
     mkdir -p "$GITHUB_ARTIFACTS_DIR"
 
+    print_info "Repository: $GITHUB_OWNER/$GITHUB_REPO"
     print_info "Fetching latest successful workflow run..."
 
-    # Get the latest successful CI workflow run
-    local RUN_ID=$(gh run list \
-        --repo "$GITHUB_OWNER/$GITHUB_REPO" \
-        --workflow "ci.yml" \
-        --status success \
-        --limit 1 \
-        --json databaseId \
-        --jq '.[0].databaseId' 2>/dev/null)
+    # Try different workflow names (ci.yml, CI.yml, build.yml, etc.)
+    local WORKFLOW_NAMES=("ci.yml" "CI.yml" "build.yml" "main.yml" "")
+    local RUN_ID=""
+
+    for workflow in "${WORKFLOW_NAMES[@]}"; do
+        if [ -n "$workflow" ]; then
+            RUN_ID=$(gh run list \
+                --repo "$GITHUB_OWNER/$GITHUB_REPO" \
+                --workflow "$workflow" \
+                --status success \
+                --limit 1 \
+                --json databaseId \
+                --jq '.[0].databaseId' 2>/dev/null)
+        else
+            # Try without workflow filter (get any successful run)
+            RUN_ID=$(gh run list \
+                --repo "$GITHUB_OWNER/$GITHUB_REPO" \
+                --status success \
+                --limit 1 \
+                --json databaseId \
+                --jq '.[0].databaseId' 2>/dev/null)
+        fi
+
+        if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+            print_info "Found workflow run: $RUN_ID"
+            break
+        fi
+    done
 
     if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-        print_error "No successful CI workflow runs found."
-        print_info "Make sure the CI workflow has run successfully at least once."
-        print_info "Push to main/develop branch to trigger a CI build."
+        print_error "No successful workflow runs found."
+        print_info ""
+        print_info "Possible causes:"
+        print_info "  1. No CI workflow has run successfully yet"
+        print_info "  2. The repository doesn't have GitHub Actions enabled"
+        print_info "  3. You don't have access to the repository"
+        print_info ""
+        print_info "To trigger a CI build:"
+        print_info "  git push origin main"
+        print_info ""
+        print_info "To check workflow runs:"
+        print_info "  gh run list --repo $GITHUB_OWNER/$GITHUB_REPO"
         return 1
     fi
 
-    print_info "Found workflow run: $RUN_ID"
+    # Try to download Windows artifact directly
+    # Try different artifact names that might be used
+    local ARTIFACT_NAMES=("personnel-management-windows" "windows-build" "windows" "build-windows")
+    local ARTIFACT_FOUND=false
 
-    # Download the Windows artifact
-    print_info "Downloading Windows artifact..."
-    gh run download "$RUN_ID" \
-        --repo "$GITHUB_OWNER/$GITHUB_REPO" \
-        --name "personnel-management-windows" \
-        --dir "$GITHUB_ARTIFACTS_DIR/windows" 2>/dev/null || {
-        print_error "Failed to download Windows artifact."
-        print_info "The artifact may have expired (GitHub keeps artifacts for 90 days)."
+    print_info "Attempting to download Windows artifact..."
+
+    for artifact_name in "${ARTIFACT_NAMES[@]}"; do
+        print_info "  Trying artifact: $artifact_name"
+        if gh run download "$RUN_ID" \
+            --repo "$GITHUB_OWNER/$GITHUB_REPO" \
+            --name "$artifact_name" \
+            --dir "$GITHUB_ARTIFACTS_DIR/windows" 2>/dev/null; then
+            print_success "Downloaded artifact: $artifact_name"
+            ARTIFACT_FOUND=true
+            break
+        fi
+    done
+
+    if [ "$ARTIFACT_FOUND" = false ]; then
+        print_error "Could not download Windows artifact."
+        print_info ""
+        print_info "Tried artifact names: ${ARTIFACT_NAMES[*]}"
+        print_info ""
+        print_info "To see available artifacts, run:"
+        print_info "  gh run view $RUN_ID --repo $GITHUB_OWNER/$GITHUB_REPO"
         return 1
-    }
+    fi
 
     # Verify the download
     if [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe" ]; then
@@ -332,7 +409,7 @@ employees, departments, and salary grades in an organization.
 %build
 mkdir -p %{_vpath_builddir}
 cd %{_vpath_builddir}
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%{_prefix} ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%{_prefix} -DBUILD_TESTING=OFF ..
 make %{?_smp_mflags}
 
 %install
@@ -1215,7 +1292,7 @@ main() {
     fi
 
     # If no action specified, show usage
-    if [ ${#platforms[@]} -eq 0 ] && [ "$build_only" = false ] && [ "$build_windows" = false ] && [ -z "$release_tag" ]; then
+    if [ ${#platforms[@]} -eq 0 ] && [ "$build_only" = false ] && [ "$build_windows" = false ] && [ "$download_windows" = false ] && [ -z "$release_tag" ]; then
         usage
         exit 1
     fi
