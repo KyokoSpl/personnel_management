@@ -8,8 +8,15 @@ ScrollView {
     id: root
     property var colorScheme
 
+    // Enable scrollbars and mouse wheel on Windows
+    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+    clip: true
+
+    contentWidth: availableWidth
+
     Column {
-        width: root.width
+        width: root.availableWidth
         spacing: 12
 
         // Header

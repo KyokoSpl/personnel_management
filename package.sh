@@ -802,8 +802,13 @@ get_commits_since_last_tag() {
         # No previous tag, get all commits
         git log --pretty=format:"- %s (%h)" --no-merges 2>/dev/null | head -50
     else
-        # Get commits between tags
-        git log "${prev_tag}..HEAD" --pretty=format:"- %s (%h)" --no-merges 2>/dev/null | head -50
+        # Get commits between tags with better formatting
+        echo "### Changes since ${prev_tag}"
+        echo ""
+        git log "${prev_tag}..HEAD" --pretty=format:"- %s (%h)" --no-merges 2>/dev/null | head -100
+        echo ""
+        echo ""
+        echo "**Commits**: $(git rev-list --count ${prev_tag}..HEAD)"
     fi
 }
 
@@ -825,105 +830,147 @@ generate_release_notes() {
 
 A modern, cross-platform Personnel Management System frontend built with **C++17** and **Qt6/QML**, featuring a beautiful **Material Design 3** user interface.
 
-## What is this?
+## 📦 Downloads
 
-Personnel Management System is a desktop application for managing:
-- 🏢 **Departments** - Organizational units
-- 👥 **Employees** - Personnel records with relationships
-- 💰 **Salary Grades** - Compensation levels
-
-### Features
-- Material Design 3 UI with dark/light themes
-- Full CRUD operations for all entities
-- Cross-platform (Linux, Windows, macOS)
-- REST API backend integration
-- Self-contained binary with embedded resources
+| Platform | Package Type | Installation |
+|----------|--------------|--------------|
+| 🐧 **Fedora/RHEL** | RPM | See instructions below |
+| 🐧 **Debian/Ubuntu** | DEB | See instructions below |
+| 🐧 **Arch Linux** | PKGBUILD + Tarball | See instructions below |
+| 🪟 **Windows** | ZIP (portable) | Extract and run |
+| 🐧 **Linux (Any)** | AppImage (portable) | Download and execute |
 
 ---
 
-## Downloads
+## 🚀 Installation Instructions
 
-| Platform | Package | File |
-|----------|---------|------|
-| **Fedora/RHEL** | RPM | \`${PROJECT_NAME}-${PROJECT_VERSION}-*.rpm\` |
-| **Debian/Ubuntu** | DEB | \`${PROJECT_NAME}_${PROJECT_VERSION}.deb\` |
-| **Arch Linux** | PKGBUILD | \`${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz\` |
-| **Windows** | ZIP | \`${PROJECT_NAME}-${PROJECT_VERSION}-windows.zip\` |
-| **Linux (Portable)** | AppImage | \`${PROJECT_NAME}-${PROJECT_VERSION}-x86_64.AppImage\` |
+### Fedora / RHEL / CentOS / openSUSE
+\`\`\`bash
+# Download the RPM file from the Assets section below, then:
+sudo dnf install ./personnel-management-${PROJECT_VERSION}-1.x86_64.rpm
+
+# Or on older systems:
+sudo rpm -ivh personnel-management-${PROJECT_VERSION}-1.x86_64.rpm
+\`\`\`
+
+After installation, launch from your application menu or run:
+\`\`\`bash
+personnel-management
+\`\`\`
 
 ---
 
-## Installation Instructions
-
-### Fedora / RHEL / CentOS
+### Debian / Ubuntu / Linux Mint / Pop!_OS
 \`\`\`bash
-# Download the RPM file, then:
-sudo dnf install ${PROJECT_NAME}-${PROJECT_VERSION}-*.rpm
+# Download the DEB file from the Assets section below, then:
+sudo apt install ./personnel-management_${PROJECT_VERSION}.deb
+
+# Or manually:
+sudo dpkg -i personnel-management_${PROJECT_VERSION}.deb
+sudo apt install -f  # Fix any missing dependencies
 \`\`\`
 
-### Debian / Ubuntu / Linux Mint
+After installation, launch from your application menu or run:
 \`\`\`bash
-# Download the DEB file, then:
-sudo dpkg -i ${PROJECT_NAME}_${PROJECT_VERSION}.deb
-sudo apt install -f  # Fix any dependency issues
+personnel-management
 \`\`\`
 
-### Arch Linux / Manjaro
-\`\`\`bash
-# Option 1: From AUR (if published)
-paru -S ${PROJECT_NAME}
+---
 
-# Option 2: Build from PKGBUILD
-tar xzf ${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz
-cd ${PROJECT_NAME}-${PROJECT_VERSION}
+### Arch Linux / Manjaro / EndeavourOS
+\`\`\`bash
+# Download BOTH files from the Assets section:
+# - personnel-management-${PROJECT_VERSION}.tar.gz (source tarball)
+# - PKGBUILD
+
+# Place them in the same directory, then:
 makepkg -si
+
+# This will build and install the package with dependencies
 \`\`\`
 
-### Windows
-1. Download \`${PROJECT_NAME}-${PROJECT_VERSION}-windows.zip\`
-2. Extract to a folder of your choice
-3. Run \`${PROJECT_NAME}.bat\` or \`bin\\personnel_management.exe\`
-
-### AppImage (Any Linux Distribution)
+After installation, launch from your application menu or run:
 \`\`\`bash
-# Download the AppImage, then:
-chmod +x ${PROJECT_NAME}-${PROJECT_VERSION}-x86_64.AppImage
-./${PROJECT_NAME}-${PROJECT_VERSION}-x86_64.AppImage
+personnel-management
+\`\`\`
+
+**Note**: The PKGBUILD expects the tarball to be in the same directory. Do not extract the tarball manually.
+
+---
+
+### Windows 10/11
+1. Download **personnel-management-${PROJECT_VERSION}-windows.zip** from the Assets section
+2. Extract the ZIP file to a folder (e.g., \`C:\\Program Files\\PersonnelManagement\`)
+3. Run **personnel_management.exe** from the \`bin\` folder
+
+**No installation required** - all Qt dependencies are included!
+
+Optional: Create a desktop shortcut to \`bin\\personnel_management.exe\`
+
+---
+
+### AppImage (Universal Linux - Any Distribution)
+\`\`\`bash
+# Download the AppImage from the Assets section:
+wget https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/download/${TAG}/personnel-management-${PROJECT_VERSION}-x86_64.AppImage
+
+# Make it executable:
+chmod +x personnel-management-${PROJECT_VERSION}-x86_64.AppImage
+
+# Run it:
+./personnel-management-${PROJECT_VERSION}-x86_64.AppImage
+\`\`\`
+
+**No installation required** - works on any Linux distribution with FUSE support!
+
+To integrate with your system:
+\`\`\`bash
+# Optional: Install AppImageLauncher for better desktop integration
+# Debian/Ubuntu: sudo apt install appimagelauncher
+# Arch: sudo pacman -S appimagelauncher
 \`\`\`
 
 ---
 
-## What Changed
+## 📝 What's New
 
 ${CHANGES}
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
-Create a \`.env\` file in the application directory to customize:
+The application connects to the backend API server. You can customize this by creating a \`.env\` file in the application directory:
+
 \`\`\`bash
 API_BASE_URL=http://your-server:8082
 API_PREFIX=/api
 \`\`\`
 
-Default API server: \`http://212.132.110.72:8082\`
+**Default API server**: \`http://212.132.110.72:8082\`
+
+**Configuration file location**:
+- **Linux**: Same directory as the executable or \`~/.config/personnel_management/.env\`
+- **Windows**: Same directory as \`personnel_management.exe\`
 
 ---
 
-## Requirements
+## 💻 System Requirements
 
 ### Linux
-- Qt6 Runtime (6.2+)
-- OpenGL support
+- **Qt6 Runtime**: 6.2 or later (automatically installed with packages)
+- **OpenGL**: OpenGL 2.1+ support
+- **Display**: X11 or Wayland
+- **RAM**: 256 MB minimum, 512 MB recommended
 
 ### Windows
-- Windows 10 or later (64-bit)
-- Visual C++ Redistributable 2019+
+- **OS**: Windows 10 (64-bit) or later
+- **Runtime**: Visual C++ Redistributable 2019+ (included in package)
+- **RAM**: 256 MB minimum, 512 MB recommended
 
 ---
 
-## Checksums
+## 🔐 Checksums (SHA256)
 
 \`\`\`
 EOF
@@ -931,7 +978,7 @@ EOF
     # Add checksums for all package files
     for pkg_dir in "$PACKAGE_DIR"/*; do
         if [ -d "$pkg_dir" ]; then
-            find "$pkg_dir" -maxdepth 1 -type f \( -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" \) 2>/dev/null | while read -r file; do
+            find "$pkg_dir" -maxdepth 1 -type f \( -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" -o -name "PKGBUILD" \) 2>/dev/null | while read -r file; do
                 if [ -f "$file" ]; then
                     sha256sum "$file" | sed 's|.*/||' >> "$NOTES_FILE"
                 fi
@@ -990,7 +1037,7 @@ create_github_release() {
                     ASSETS+=("$file")
                     print_info "  Found: $(basename "$file")"
                 fi
-            done < <(find "$pkg_dir" -maxdepth 1 -type f \( -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" \) -print0 2>/dev/null)
+            done < <(find "$pkg_dir" -maxdepth 1 -type f \( -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" -o -name "PKGBUILD" -o -name ".SRCINFO" \) -print0 2>/dev/null)
         fi
     done
 

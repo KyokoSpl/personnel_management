@@ -9,6 +9,11 @@ ScrollView {
     property var colorScheme
     property string searchQuery: ""
 
+    // Enable scrollbars and mouse wheel on Windows
+    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+    clip: true
+
     // Format role for display (add spaces to camelCase)
     function formatRole(role) {
         if (!role) return "N/A"
@@ -41,8 +46,10 @@ ScrollView {
         return filtered
     }
 
+    contentWidth: availableWidth
+
     Column {
-        width: root.width
+        width: root.availableWidth
         spacing: 12
 
         // Header

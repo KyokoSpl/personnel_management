@@ -9,6 +9,11 @@ ScrollView {
     property var colorScheme
     property string searchQuery: ""
 
+    // Enable scrollbars and mouse wheel on Windows
+    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+    clip: true
+
     // Filter departments based on search query
     function getFilteredDepartments() {
         if (!personnelApp) return []
@@ -28,8 +33,10 @@ ScrollView {
         return filtered
     }
 
+    contentWidth: availableWidth
+
     Column {
-        width: root.width
+        width: root.availableWidth
         spacing: 12
 
         // Header with title and add button
