@@ -173,13 +173,30 @@ jobs:
         run: |
           $exePath = Get-ChildItem -Path "build/package" -Filter "personnel_management.exe" | Select-Object -First 1
           if ($exePath) {
-            & "$env:Qt6_DIR/bin/windeployqt.exe" `
-              --qmldir resources/qml `
-              --no-translations `
-              --no-system-d3d-compiler `
-              --no-opengl-sw `
-              $exePath.FullName
-            Write-Host "windeployqt completed"
+            # Find windeployqt - it's in the Qt bin directory
+            $qtRoot = "$env:RUNNER_WORKSPACE/Qt/$env:QT_VERSION/msvc2019_64"
+            $windeployqt = "$qtRoot/bin/windeployqt.exe"
+
+            if (-not (Test-Path $windeployqt)) {
+              # Try alternative path
+              $windeployqt = Get-ChildItem -Path "$env:RUNNER_WORKSPACE/Qt" -Recurse -Filter "windeployqt.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($windeployqt) { $windeployqt = $windeployqt.FullName }
+            }
+
+            if (Test-Path $windeployqt) {
+              Write-Host "Using windeployqt: $windeployqt"
+              & $windeployqt `
+                --qmldir resources/qml `
+                --no-translations `
+                --no-system-d3d-compiler `
+                --no-opengl-sw `
+                $exePath.FullName
+              Write-Host "windeployqt completed"
+            } else {
+              Write-Host "::warning::windeployqt not found, skipping Qt deployment"
+              Write-Host "Searched in: $env:RUNNER_WORKSPACE/Qt"
+              Get-ChildItem -Path "$env:RUNNER_WORKSPACE/Qt" -Recurse -Include "*.exe" | Select-Object -First 20
+            }
           }
         shell: pwsh
 

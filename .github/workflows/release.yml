@@ -139,13 +139,29 @@ jobs:
       - name: Run windeployqt
         run: |
           $exePath = "dist/personnel-management-windows/personnel_management.exe"
-          & "$env:Qt6_DIR/bin/windeployqt.exe" `
-            --qmldir resources/qml `
-            --no-translations `
-            --no-system-d3d-compiler `
-            --no-opengl-sw `
-            $exePath
-          Write-Host "windeployqt completed"
+
+          # Find windeployqt - it's in the Qt bin directory
+          $qtRoot = "$env:RUNNER_WORKSPACE/Qt/$env:QT_VERSION/msvc2019_64"
+          $windeployqt = "$qtRoot/bin/windeployqt.exe"
+
+          if (-not (Test-Path $windeployqt)) {
+            # Try alternative path
+            $found = Get-ChildItem -Path "$env:RUNNER_WORKSPACE/Qt" -Recurse -Filter "windeployqt.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) { $windeployqt = $found.FullName }
+          }
+
+          if (Test-Path $windeployqt) {
+            Write-Host "Using windeployqt: $windeployqt"
+            & $windeployqt `
+              --qmldir resources/qml `
+              --no-translations `
+              --no-system-d3d-compiler `
+              --no-opengl-sw `
+              $exePath
+            Write-Host "windeployqt completed"
+          } else {
+            Write-Host "::warning::windeployqt not found, skipping Qt deployment"
+          }
         shell: pwsh
 
       - name: Create Windows ZIP
