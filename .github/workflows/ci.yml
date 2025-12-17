@@ -61,7 +61,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
-          modules: "qtquickcontrols2 qtshadertools"
+          modules: "qtshadertools"
           cache: true
 
       - name: Install dependencies
@@ -111,7 +111,7 @@ jobs:
           host: windows
           target: desktop
           arch: win64_msvc2019_64
-          modules: "qtquickcontrols2 qtshadertools"
+          modules: "qtshadertools"
           cache: true
 
       - name: Setup MSVC
@@ -206,7 +206,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
-          modules: "qtquickcontrols2 qtshadertools"
+          modules: "qtshadertools"
           cache: true
 
       - name: Install dependencies
