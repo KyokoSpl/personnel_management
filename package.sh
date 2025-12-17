@@ -482,7 +482,7 @@ sha256sums=('SKIP')
 
 build() {
     cd "\${srcdir}/\${pkgname}-\${pkgver}"
-    cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+    cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=OFF
     cmake --build build
 }
 
@@ -508,6 +508,7 @@ EOF
     print_info "Creating source tarball for ArchLinux..."
     local TEMP_DIR=$(mktemp -d)
     local TARGET_DIR="$TEMP_DIR/${PROJECT_NAME}-${PROJECT_VERSION}"
+    local ORIGINAL_DIR="$(pwd)"
     mkdir -p "$TARGET_DIR/scripts"
 
     cp -r src include resources CMakeLists.txt "$TARGET_DIR/"
@@ -515,12 +516,13 @@ EOF
 
     cd "$TEMP_DIR"
     tar -czf "${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz" "${PROJECT_NAME}-${PROJECT_VERSION}"
-    mv "${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz" "$(dirs -l -0)/$PACKAGE_DIR/arch/"
+    mv "${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz" "$ORIGINAL_DIR/$PACKAGE_DIR/arch/"
+    cd "$ORIGINAL_DIR"
     rm -rf "$TEMP_DIR"
 
     cd "$PACKAGE_DIR/arch"
     makepkg --printsrcinfo > .SRCINFO
-    cd - > /dev/null
+    cd "$ORIGINAL_DIR"
 
     print_success "ArchLinux PKGBUILD created: $PACKAGE_DIR/arch/"
 }
