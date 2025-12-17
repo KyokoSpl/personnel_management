@@ -9,9 +9,14 @@ ScrollView {
     property var colorScheme
 
     // Enable scrollbars and mouse wheel on Windows
-    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+    ScrollBar.vertical.policy: ScrollBar.AsNeeded
     ScrollBar.horizontal.policy: ScrollBar.AsNeeded
     clip: true
+    
+    // Windows: Ensure interactive scrolling
+    Component.onCompleted: {
+        if (contentItem) contentItem.interactive = true
+    }
 
     contentWidth: availableWidth
 

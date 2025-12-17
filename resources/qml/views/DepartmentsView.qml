@@ -10,9 +10,14 @@ ScrollView {
     property string searchQuery: ""
 
     // Enable scrollbars and mouse wheel on Windows
-    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+    ScrollBar.vertical.policy: ScrollBar.AsNeeded
     ScrollBar.horizontal.policy: ScrollBar.AsNeeded
     clip: true
+    
+    // Windows: Ensure interactive scrolling
+    Component.onCompleted: {
+        if (contentItem) contentItem.interactive = true
+    }
 
     // Filter departments based on search query
     function getFilteredDepartments() {
@@ -101,6 +106,11 @@ ScrollView {
                     font.pixelSize: 14
                     color: colorScheme.textOnSurface
                     clip: true
+    
+    // Windows: Ensure interactive scrolling
+    Component.onCompleted: {
+        if (contentItem) contentItem.interactive = true
+    }
                     selectByMouse: true
                     onTextChanged: root.searchQuery = text
 

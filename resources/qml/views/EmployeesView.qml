@@ -10,9 +10,14 @@ ScrollView {
     property string searchQuery: ""
 
     // Enable scrollbars and mouse wheel on Windows
-    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+    ScrollBar.vertical.policy: ScrollBar.AsNeeded
     ScrollBar.horizontal.policy: ScrollBar.AsNeeded
     clip: true
+    
+    // Windows: Ensure interactive scrolling
+    Component.onCompleted: {
+        if (contentItem) contentItem.interactive = true
+    }
 
     // Format role for display (add spaces to camelCase)
     function formatRole(role) {
@@ -112,6 +117,11 @@ ScrollView {
                     font.pixelSize: 14
                     color: colorScheme.textOnSurface
                     clip: true
+    
+    // Windows: Ensure interactive scrolling
+    Component.onCompleted: {
+        if (contentItem) contentItem.interactive = true
+    }
                     selectByMouse: true
                     onTextChanged: root.searchQuery = text
 
@@ -813,6 +823,11 @@ ScrollView {
                         }
                         contentItem: ListView {
                             clip: true
+    
+    // Windows: Ensure interactive scrolling
+    Component.onCompleted: {
+        if (contentItem) contentItem.interactive = true
+    }
                             implicitHeight: contentHeight
                             model: editEmpDepartmentCombo.popup.visible ? editEmpDepartmentCombo.delegateModel : null
                             currentIndex: editEmpDepartmentCombo.highlightedIndex
@@ -917,6 +932,11 @@ ScrollView {
                         }
                         contentItem: ListView {
                             clip: true
+    
+    // Windows: Ensure interactive scrolling
+    Component.onCompleted: {
+        if (contentItem) contentItem.interactive = true
+    }
                             implicitHeight: contentHeight
                             model: editEmpGradeCombo.popup.visible ? editEmpGradeCombo.delegateModel : null
                             currentIndex: editEmpGradeCombo.highlightedIndex
