@@ -15,7 +15,12 @@ NC='\033[0m' # No Color
 
 # Project information
 PROJECT_NAME="personnel-management"
-PROJECT_VERSION="0.2.0"
+# Auto-detect version from CMakeLists.txt if available
+if [ -f "CMakeLists.txt" ]; then
+    PROJECT_VERSION=$(grep -oP 'project\([^)]+VERSION\s+\K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | head -1)
+fi
+# Fallback if detection fails
+PROJECT_VERSION="${PROJECT_VERSION:-0.2.0}"
 PROJECT_DESCRIPTION="Personnel Management System - Qt6/QML Frontend Application"
 PROJECT_MAINTAINER="Kyoko Kiese <kyokokiese@proton.me>"
 PROJECT_URL="https://github.com/kyokospl/personnel-management"
@@ -1318,6 +1323,18 @@ main() {
                 ;;
         esac
     done
+
+    # Update PROJECT_VERSION from release tag if provided
+    if [ -n "$release_tag" ]; then
+        # Extract version from tag (remove 'v' prefix)
+        local tag_version="${release_tag#v}"
+        if [[ "$tag_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            PROJECT_VERSION="$tag_version"
+            print_info "Using version from release tag: $PROJECT_VERSION"
+        else
+            print_warning "Release tag '$release_tag' doesn't follow vX.Y.Z format, using default version: $PROJECT_VERSION"
+        fi
+    fi
 
     # Handle special commands first
     if [ "$do_list_releases" = true ]; then
