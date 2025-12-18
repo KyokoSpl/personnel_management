@@ -32,14 +32,28 @@ int main(int argc, char* argv[]) {
     QQmlApplicationEngine engine;
 
     // Add import paths for QML files (from file system, not resources)
-    QString qmlPath = QCoreApplication::applicationDirPath() + "/resources/qml";
-    if (!QDir(qmlPath).exists()) {
-        // Try relative path for development
-        qmlPath = QDir::currentPath() + "/resources/qml";
+    QString qmlPath;
+    
+    // Try multiple paths in order of preference
+    QStringList possiblePaths = {
+        "/usr/share/personnel_management/qml",                          // Installed location (Linux)
+        QCoreApplication::applicationDirPath() + "/../share/personnel_management/qml", // Relative to bin
+        QCoreApplication::applicationDirPath() + "/resources/qml",     // Build directory
+        QDir::currentPath() + "/resources/qml"                         // Development
+    };
+    
+    for (const QString& path : possiblePaths) {
+        if (QDir(path).exists()) {
+            qmlPath = path;
+            break;
+        }
     }
-    engine.addImportPath(qmlPath);
-    engine.addImportPath(qmlPath + "/components");
-    engine.addImportPath(qmlPath + "/views");
+    
+    if (!qmlPath.isEmpty()) {
+        engine.addImportPath(qmlPath);
+        engine.addImportPath(qmlPath + "/components");
+        engine.addImportPath(qmlPath + "/views");
+    }
 
     // Register custom types
     qmlRegisterUncreatableType<Material3Colors>("PersonnelManagement", 1, 0, "Material3Colors",
@@ -56,11 +70,13 @@ int main(int argc, char* argv[]) {
     QUrl qmlFile;
     QString mainQmlPath = qmlPath + "/main.qml";
 
-    if (QFile::exists(mainQmlPath)) {
+    if (!qmlPath.isEmpty() && QFile::exists(mainQmlPath)) {
         qmlFile = QUrl::fromLocalFile(mainQmlPath);
+        qDebug() << "Loading QML from:" << mainQmlPath;
     } else {
         // Fallback to qrc if files not found
         qmlFile = QUrl(QStringLiteral("qrc:/qml/main.qml"));
+        qDebug() << "Loading QML from resources";
     }
 
     QObject::connect(
