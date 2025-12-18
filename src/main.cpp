@@ -33,22 +33,23 @@ int main(int argc, char* argv[]) {
 
     // Add import paths for QML files (from file system, not resources)
     QString qmlPath;
-    
+
     // Try multiple paths in order of preference
     QStringList possiblePaths = {
-        "/usr/share/personnel_management/qml",                          // Installed location (Linux)
-        QCoreApplication::applicationDirPath() + "/../share/personnel_management/qml", // Relative to bin
-        QCoreApplication::applicationDirPath() + "/resources/qml",     // Build directory
-        QDir::currentPath() + "/resources/qml"                         // Development
+        "/usr/share/personnel_management/qml", // Installed location (Linux)
+        QCoreApplication::applicationDirPath() +
+            "/../share/personnel_management/qml",                  // Relative to bin
+        QCoreApplication::applicationDirPath() + "/resources/qml", // Build directory
+        QDir::currentPath() + "/resources/qml"                     // Development
     };
-    
+
     for (const QString& path : possiblePaths) {
         if (QDir(path).exists()) {
             qmlPath = path;
             break;
         }
     }
-    
+
     if (!qmlPath.isEmpty()) {
         engine.addImportPath(qmlPath);
         engine.addImportPath(qmlPath + "/components");
