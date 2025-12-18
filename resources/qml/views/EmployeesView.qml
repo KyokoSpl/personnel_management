@@ -4,19 +4,22 @@ import QtQuick.Layouts 1.15
 import "../components"
 import "../dialogs"
 
-ScrollView {
+Flickable {
     id: root
     property var colorScheme
     property string searchQuery: ""
 
-    // Enable scrollbars and mouse wheel on Windows
-    ScrollBar.vertical.policy: ScrollBar.AsNeeded
-    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+    // Essential for scrolling on Windows
+    contentHeight: contentColumn.height
+    contentWidth: width
     clip: true
+    boundsBehavior: Flickable.StopAtBounds
+    flickableDirection: Flickable.VerticalFlick
     
-    // Windows: Ensure interactive scrolling
-    Component.onCompleted: {
-        if (contentItem) contentItem.interactive = true
+    // Vertical scrollbar
+    ScrollBar.vertical: ScrollBar {
+        policy: ScrollBar.AsNeeded
+        active: true
     }
 
     // Format role for display (add spaces to camelCase)
@@ -51,10 +54,9 @@ ScrollView {
         return filtered
     }
 
-    contentWidth: availableWidth
-
     Column {
-        width: root.availableWidth
+        id: contentColumn
+        width: root.width
         spacing: 12
 
         // Header
