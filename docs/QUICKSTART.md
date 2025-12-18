@@ -139,7 +139,7 @@ personnel-management
 ### Initial Data
 
 The application connects to a demo API server by default:
-- **URL**: http://212.132.110.72:8082
+- **URL**: http://localhost:8082
 - Sample data is pre-loaded for testing
 
 ## Basic Usage
@@ -211,7 +211,7 @@ export API_PREFIX=/api
 
 | Setting | Default |
 |---------|---------|
-| API_BASE_URL | http://212.132.110.72:8082 |
+| API_BASE_URL | http://localhost:8082 |
 | API_PREFIX | /api |
 
 ## Troubleshooting
@@ -242,7 +242,7 @@ cmake -DCMAKE_PREFIX_PATH=/path/to/qt6 ..
 
 **Check API server:**
 ```bash
-curl http://212.132.110.72:8082/api/departments
+curl http://localhost:8082/api/departments
 ```
 
 **Solutions:**
@@ -284,7 +284,7 @@ QSG_INFO=1 ./personnel_management
 
 - **Documentation**: See the `docs/` folder for detailed guides
 - **Issues**: Report bugs on [GitHub Issues](https://github.com/kyokospl/personnel-management/issues)
-- **API Docs**: http://212.132.110.72:8082/docs/
+- **API Docs**: http://localhost:8082/docs/
 
 ## Next Steps
 

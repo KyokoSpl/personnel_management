@@ -10,7 +10,7 @@ This script populates the database with realistic test data:
 Usage:
     python populate_database.py [--base-url URL]
 
-Default base URL: http://212.132.110.72:8082
+Default base URL: http://localhost:8082
 """
 
 import argparse
@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 import requests
 
 # API Configuration
-DEFAULT_BASE_URL = "http://212.132.110.72:8082"
+DEFAULT_BASE_URL = "http://localhost:8082"
 
 # Departments to create (18 departments)
 DEPARTMENTS = [

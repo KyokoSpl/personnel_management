@@ -30,7 +30,7 @@ private:
         loadEnvFile();
 
         // Load from environment or use defaults
-        m_apiBaseUrl = qEnvironmentVariable("API_BASE_URL", "http://212.132.110.72:8082");
+        m_apiBaseUrl = qEnvironmentVariable("API_BASE_URL", "http://localhost:8082");
         m_apiPrefix = qEnvironmentVariable("API_PREFIX", "/api");
         m_routeDepartments = qEnvironmentVariable("ROUTE_DEPARTMENTS", "/departments");
         m_routeEmployees = qEnvironmentVariable("ROUTE_EMPLOYEES", "/employees");

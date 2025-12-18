@@ -157,7 +157,7 @@ The application can be configured using environment variables or a `.env` file:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `API_BASE_URL` | `http://212.132.110.72:8082` | Backend API base URL |
+| `API_BASE_URL` | `http://localhost:8082` | Backend API base URL |
 | `API_PREFIX` | `/api` | API route prefix |
 | `ROUTE_DEPARTMENTS` | `/departments` | Departments endpoint |
 | `ROUTE_EMPLOYEES` | `/employees` | Employees endpoint |
@@ -505,8 +505,8 @@ For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITE
 ## 📡 API Documentation
 
 The application connects to a REST API backend. See the API documentation at:
-- **Swagger UI**: http://212.132.110.72:8082/docs/
-- **OpenAPI Spec**: http://212.132.110.72:8082/openapi.json
+- **Swagger UI**: http://localhost:8082/docs/
+- **OpenAPI Spec**: http://localhost:8082/openapi.json
 
 ### Endpoints
 

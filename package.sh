@@ -980,7 +980,7 @@ API_BASE_URL=http://your-server:8082
 API_PREFIX=/api
 \`\`\`
 
-**Default API server**: \`http://212.132.110.72:8082\`
+**Default API server**: \`http://localhost:8082\`
 
 **Configuration file location**:
 - **Linux**: Same directory as the executable or \`~/.config/personnel_management/.env\`

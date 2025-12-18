@@ -10,15 +10,15 @@ The Personnel Management System connects to a REST API backend for all data oper
 
 | Setting | Default Value | Environment Variable |
 |---------|---------------|---------------------|
-| Base URL | `http://212.132.110.72:8082` | `API_BASE_URL` |
+| Base URL | `http://localhost:8082` | `API_BASE_URL` |
 | API Prefix | `/api` | `API_PREFIX` |
-| Full API URL | `http://212.132.110.72:8082/api` | - |
+| Full API URL | `http://localhost:8082/api` | - |
 
 ### Live Documentation
 
-- **Swagger UI**: http://212.132.110.72:8082/docs/
-- **OpenAPI Spec**: http://212.132.110.72:8082/openapi.json
-- **ReDoc**: http://212.132.110.72:8082/redoc/
+- **Swagger UI**: http://localhost:8082/docs/
+- **OpenAPI Spec**: http://localhost:8082/openapi.json
+- **ReDoc**: http://localhost:8082/redoc/
 
 ## Authentication
 
@@ -823,36 +823,36 @@ void ApiClient::deleteDepartment(const QString& id) {
 
 ```bash
 # List departments
-curl -X GET http://212.132.110.72:8082/api/departments
+curl -X GET http://localhost:8082/api/departments
 
 # Create department
-curl -X POST http://212.132.110.72:8082/api/departments \
+curl -X POST http://localhost:8082/api/departments \
   -H "Content-Type: application/json" \
   -d '{"name": "Test Department"}'
 
 # Update department
-curl -X PUT http://212.132.110.72:8082/api/departments/{id} \
+curl -X PUT http://localhost:8082/api/departments/{id} \
   -H "Content-Type: application/json" \
   -d '{"name": "Updated Department"}'
 
 # Delete department
-curl -X DELETE http://212.132.110.72:8082/api/departments/{id}
+curl -X DELETE http://localhost:8082/api/departments/{id}
 ```
 
 ### Using HTTPie
 
 ```bash
 # List departments
-http GET http://212.132.110.72:8082/api/departments
+http GET http://localhost:8082/api/departments
 
 # Create department
-http POST http://212.132.110.72:8082/api/departments \
+http POST http://localhost:8082/api/departments \
   name="Test Department"
 
 # Update department
-http PUT http://212.132.110.72:8082/api/departments/{id} \
+http PUT http://localhost:8082/api/departments/{id} \
   name="Updated Department"
 
 # Delete department
-http DELETE http://212.132.110.72:8082/api/departments/{id}
+http DELETE http://localhost:8082/api/departments/{id}
 ```
