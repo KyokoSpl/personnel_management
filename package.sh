@@ -297,8 +297,12 @@ download_windows_artifact() {
         return 1
     fi
 
-    # Verify the download
-    if [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe" ]; then
+    # Verify the download - check for installer first, then fallback to exe
+    if [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel-management-setup.exe" ]; then
+        print_success "Windows installer downloaded successfully!"
+        print_info "Location: $GITHUB_ARTIFACTS_DIR/windows/personnel-management-setup.exe"
+        return 0
+    elif [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe" ]; then
         print_success "Windows executable downloaded successfully!"
         print_info "Location: $GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe"
         return 0
@@ -590,6 +594,20 @@ package_windows() {
     print_header "Creating Windows Package"
 
     local WIN_DIR="$PACKAGE_DIR/windows/${PROJECT_NAME}-${PROJECT_VERSION}-windows"
+    local INSTALLER_FOUND=false
+
+    # Check for Windows installer from GitHub Actions artifact (preferred)
+    if [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel-management-setup.exe" ]; then
+        print_info "Using Windows installer from GitHub Actions artifact..."
+        mkdir -p "$PACKAGE_DIR/windows"
+        cp "$GITHUB_ARTIFACTS_DIR/windows/personnel-management-setup.exe" \
+           "$PACKAGE_DIR/windows/${PROJECT_NAME}-${PROJECT_VERSION}-setup.exe"
+        INSTALLER_FOUND=true
+        print_success "Windows installer packaged: $PACKAGE_DIR/windows/${PROJECT_NAME}-${PROJECT_VERSION}-setup.exe"
+        return 0
+    fi
+
+    # Fallback: create portable package if we have the exe but no installer
     rm -rf "$WIN_DIR"
     mkdir -p "$WIN_DIR/bin"
     mkdir -p "$WIN_DIR/qml"
@@ -599,7 +617,7 @@ package_windows() {
     local WINDOWS_EXE_FOUND=false
     local USE_GITHUB_ARTIFACT=false
 
-    # Check for GitHub Actions artifact first (preferred - has all Qt DLLs)
+    # Check for GitHub Actions artifact 
     if [ -d "$GITHUB_ARTIFACTS_DIR/windows" ]; then
         if [ -f "$GITHUB_ARTIFACTS_DIR/windows/personnel_management.exe" ]; then
             print_info "Using Windows build from GitHub Actions artifact..."
@@ -842,12 +860,22 @@ A modern, cross-platform Personnel Management System frontend built with **C++17
 | 🐧 **Fedora/RHEL** | RPM | See instructions below |
 | 🐧 **Debian/Ubuntu** | DEB | See instructions below |
 | 🐧 **Arch Linux** | PKGBUILD + Tarball | See instructions below |
-| 🪟 **Windows** | ZIP (portable) | Extract and run |
+| 🪟 **Windows** | Setup Installer | Download and run setup.exe |
 | 🐧 **Linux (Any)** | AppImage (portable) | Download and execute |
 
 ---
 
 ## 🚀 Installation Instructions
+
+### Windows
+1. Download **personnel-management-${PROJECT_VERSION}-setup.exe** from the Assets section below
+2. Run the installer
+3. Follow the installation wizard
+4. Launch from Start Menu or Desktop shortcut
+
+**Requirements:** Windows 10 or later (64-bit)
+
+---
 
 ### Fedora / RHEL / CentOS / openSUSE
 \`\`\`bash
@@ -1042,7 +1070,7 @@ create_github_release() {
                     ASSETS+=("$file")
                     print_info "  Found: $(basename "$file")"
                 fi
-            done < <(find "$pkg_dir" -maxdepth 1 -type f \( -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" -o -name "PKGBUILD" -o -name ".SRCINFO" \) -print0 2>/dev/null)
+            done < <(find "$pkg_dir" -maxdepth 1 -type f \( -name "*.rpm" -o -name "*.deb" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.tar.gz" -o -name "*-setup.exe" -o -name "PKGBUILD" -o -name ".SRCINFO" \) -print0 2>/dev/null)
         fi
     done
 

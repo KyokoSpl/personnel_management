@@ -200,11 +200,104 @@ jobs:
           }
         shell: pwsh
 
-      - name: Upload Windows artifact
+      - name: Create NSIS installer script
+        run: |
+          $version = "${{ env.BUILD_TYPE }}" -eq "Release" ? "0.3.0" : "0.3.0-dev"
+          
+          $nsisScript = @"
+!define APP_NAME "Personnel Management"
+!define APP_VERSION "$version"
+!define PUBLISHER "LF11A Project"
+!define WEB_SITE "https://github.com/kyokospl/personnel-management"
+!define APP_EXE "personnel_management.exe"
+!define INSTALL_DIR "`$PROGRAMFILES64\Personnel Management"
+
+Name "`${APP_NAME}"
+OutFile "personnel-management-setup.exe"
+InstallDir "`${INSTALL_DIR}"
+InstallDirRegKey HKLM "Software\`${APP_NAME}" "InstallDir"
+RequestExecutionLevel admin
+
+!include "MUI2.nsh"
+
+!define MUI_ABORTWARNING
+!define MUI_ICON "`${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
+!define MUI_UNICON "`${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "LICENSE"
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_LANGUAGE "English"
+
+Section "MainSection" SEC01
+  SetOutPath "`$INSTDIR"
+  SetOverwrite ifnewer
+  
+  File /r "build\package\*.*"
+  
+  CreateDirectory "`$SMPROGRAMS\`${APP_NAME}"
+  CreateShortCut "`$SMPROGRAMS\`${APP_NAME}\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_EXE}"
+  CreateShortCut "`$DESKTOP\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_EXE}"
+  
+  WriteRegStr HKLM "Software\`${APP_NAME}" "InstallDir" "`$INSTDIR"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayName" "`${APP_NAME}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "UninstallString" "`$INSTDIR\uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayIcon" "`$INSTDIR\`${APP_EXE}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "Publisher" "`${PUBLISHER}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayVersion" "`${APP_VERSION}"
+  
+  WriteUninstaller "`$INSTDIR\uninstall.exe"
+SectionEnd
+
+Section "Uninstall"
+  Delete "`$INSTDIR\uninstall.exe"
+  Delete "`$DESKTOP\`${APP_NAME}.lnk"
+  Delete "`$SMPROGRAMS\`${APP_NAME}\*.*"
+  RMDir "`$SMPROGRAMS\`${APP_NAME}"
+  
+  RMDir /r "`$INSTDIR"
+  
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}"
+  DeleteRegKey HKLM "Software\`${APP_NAME}"
+SectionEnd
+"@
+          
+          Set-Content -Path "installer.nsi" -Value $nsisScript
+          Write-Host "NSIS script created"
+        shell: pwsh
+
+      - name: Build Windows installer
+        run: |
+          # Install NSIS using Chocolatey
+          choco install nsis -y
+          
+          # Refresh environment to get NSIS in PATH
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+          
+          # Build the installer
+          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+          
+          if (Test-Path "personnel-management-setup.exe") {
+            Write-Host "Installer created successfully"
+            New-Item -ItemType Directory -Force -Path "build/installer"
+            Move-Item "personnel-management-setup.exe" "build/installer/"
+          } else {
+            Write-Host "::error::Failed to create installer"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: personnel-management-windows
-          path: build/package/
+          path: build/installer/personnel-management-setup.exe
           if-no-files-found: error
 
   # ===========================================
