@@ -202,25 +202,34 @@ jobs:
 
       - name: Create NSIS installer script
         run: |
-          @'
+          # Extract version from CMakeLists.txt
+          $cmakeContent = Get-Content "CMakeLists.txt" -Raw
+          if ($cmakeContent -match 'project\s*\(\s*personnel_management\s+VERSION\s+(\d+\.\d+\.\d+)') {
+            $appVersion = $matches[1]
+          } else {
+            $appVersion = "0.0.0"
+          }
+          Write-Host "Detected version: $appVersion"
+          
+          @"
           !define APP_NAME "Personnel Management"
-          !define APP_VERSION "0.3.0"
+          !define APP_VERSION "$appVersion"
           !define PUBLISHER "LF11A Project"
           !define WEB_SITE "https://github.com/kyokospl/personnel-management"
           !define APP_EXE "personnel_management.exe"
-          !define INSTALL_DIR "$PROGRAMFILES64\Personnel Management"
+          !define INSTALL_DIR "`$PROGRAMFILES64\Personnel Management"
           
-          Name "${APP_NAME}"
+          Name "`${APP_NAME}"
           OutFile "personnel-management-setup.exe"
-          InstallDir "${INSTALL_DIR}"
-          InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallDir"
+          InstallDir "`${INSTALL_DIR}"
+          InstallDirRegKey HKLM "Software\`${APP_NAME}" "InstallDir"
           RequestExecutionLevel admin
           
           !include "MUI2.nsh"
           
           !define MUI_ABORTWARNING
-          !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-          !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+          !define MUI_ICON "`${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
+          !define MUI_UNICON "`${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
           
           !insertmacro MUI_PAGE_WELCOME
           !insertmacro MUI_PAGE_LICENSE "LICENSE"
@@ -234,37 +243,37 @@ jobs:
           !insertmacro MUI_LANGUAGE "English"
           
           Section "MainSection" SEC01
-            SetOutPath "$INSTDIR"
+            SetOutPath "`$INSTDIR"
             SetOverwrite ifnewer
             
             File /r "build\package\*.*"
             
-            CreateDirectory "$SMPROGRAMS\${APP_NAME}"
-            CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
-            CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
+            CreateDirectory "`$SMPROGRAMS\`${APP_NAME}"
+            CreateShortCut "`$SMPROGRAMS\`${APP_NAME}\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_EXE}"
+            CreateShortCut "`$DESKTOP\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_EXE}"
             
-            WriteRegStr HKLM "Software\${APP_NAME}" "InstallDir" "$INSTDIR"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayName" "${APP_NAME}"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString" "$INSTDIR\uninstall.exe"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "Publisher" "${PUBLISHER}"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayVersion" "${APP_VERSION}"
+            WriteRegStr HKLM "Software\`${APP_NAME}" "InstallDir" "`$INSTDIR"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayName" "`${APP_NAME}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "UninstallString" "`$INSTDIR\uninstall.exe"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayIcon" "`$INSTDIR\`${APP_EXE}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "Publisher" "`${PUBLISHER}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayVersion" "`${APP_VERSION}"
             
-            WriteUninstaller "$INSTDIR\uninstall.exe"
+            WriteUninstaller "`$INSTDIR\uninstall.exe"
           SectionEnd
           
           Section "Uninstall"
-            Delete "$INSTDIR\uninstall.exe"
-            Delete "$DESKTOP\${APP_NAME}.lnk"
-            Delete "$SMPROGRAMS\${APP_NAME}\*.*"
-            RMDir "$SMPROGRAMS\${APP_NAME}"
+            Delete "`$INSTDIR\uninstall.exe"
+            Delete "`$DESKTOP\`${APP_NAME}.lnk"
+            Delete "`$SMPROGRAMS\`${APP_NAME}\*.*"
+            RMDir "`$SMPROGRAMS\`${APP_NAME}"
             
-            RMDir /r "$INSTDIR"
+            RMDir /r "`$INSTDIR"
             
-            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
-            DeleteRegKey HKLM "Software\${APP_NAME}"
+            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}"
+            DeleteRegKey HKLM "Software\`${APP_NAME}"
           SectionEnd
-          '@ | Out-File -FilePath "installer.nsi" -Encoding ASCII
+          "@ | Out-File -FilePath "installer.nsi" -Encoding ASCII
           
           Write-Host "NSIS script created"
         shell: pwsh

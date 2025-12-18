@@ -326,6 +326,7 @@ Flickable {
                 Row {
                     spacing: 12
                     anchors.right: parent.right
+                    anchors.rightMargin: 24
 
                     Button {
                         text: "Cancel"
@@ -514,6 +515,7 @@ Flickable {
                 Row {
                     spacing: 12
                     anchors.right: parent.right
+                    anchors.rightMargin: 24
 
                     Button {
                         text: "Cancel"
